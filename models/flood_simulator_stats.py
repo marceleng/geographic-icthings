@@ -7,10 +7,7 @@ from matplotlib.lines import Line2D
 def dict_to_list(d):
     indexes = list(d.keys())
     indexes.sort()
-    ret = []
-    for i in indexes:
-        ret.append(d[i])
-    return ret
+    return np.array([ d[i] for i in indexes ])
 
 def none_if_undef(f):
     @functools.wraps(f)
@@ -36,12 +33,12 @@ class ExpStats:
         s = s[s.rfind('/')+1:] #Removes path
         s = s.split('_')
         self.params = dict(zip(["nodes", "degree", "steps", "date"], map(int, s[:-1])))
-        self.params["mode"] = s[len(s)-1]
+        self.params["mode"] = s[-1]
 
     def import_file(self, filename):
         f=open(filename,'r')
         for line in f:
-            s = map(int,line.split()) 
+            s = np.fromiter(map(int,line.split()), np.uint)
             self.results[s[0]] = s[1:]
         f.close()
 
@@ -64,13 +61,15 @@ class ExpStats:
         try:
             means = self.get_means()[start:stop]
             mmean = np.mean(means)
-            slope, intercept = np.polyfit(self.results.keys()[start:stop], means, 1)
-            r_squared = (1. - float(sum(map(lambda x,y : (x*slope+intercept-y)**2, self.results.keys()[start:stop], means))) /
+            keys = list(self.results.keys())[start:stop]
+            slope, intercept = np.polyfit(keys, means, 1)
+            r_squared = (1. - float(sum(map(lambda x,y : (x*slope+intercept-y)**2, keys, means))) /
                                              sum(map(lambda x : (x-mmean)**2, means)))
-        except Exception:
-            print "Error on file ",
-            print self.params
-        return slope, intercept, r_squared
+            return slope, intercept, r_squared
+        except Exception as e:
+            print("Error on file {}: {}".format(self.params, e)) 
+            import traceback as tb; tb.print_tb(e.__traceback__)
+            raise e
 
     def __str__(self):
         return r"Mode: {0}, d={1}, $|V_i| = {2:.2f}\times i + {3:.2f}, R^2={4:.2f}$".format(self.params["mode"], self.params["degree"],
@@ -106,12 +105,16 @@ class StatsExplorer:
                  sum(map(lambda x : (x-mslope)**2, slopes)))
         return slope, inter, r_squared
 
-    def plot_subgraphs(self, stop=None, reverse=False):
-        for esk in self.exps:
-            self.plot_subgraph(esk, reverse=reverse, stop=stop)
+    def plot_subgraphs(self, stop=None, reverse=False, d_values=None, **kwargs):
+        if not d_values:
+            for esk in self.exps:
+                self.plot_subgraph(esk, reverse=reverse, stop=stop, **kwargs)
+        else:
+            for d in d_values:
+                self.plot_subgraph(d, reverse=reverse, stop=stop, **kwargs)
         return self.lines
 
-    def plot_subgraph(self, density, stop=None, reverse=False):
+    def plot_subgraph(self, density, stop=None, reverse=False, **kwargs):
         import matplotlib.pyplot as plt
         es = self.exps[density]
         keys = es.results.keys()
@@ -125,7 +128,7 @@ class StatsExplorer:
         marker=self.markers.next()
         linestyle=self.linestyles.next()
         s, i, _ = es.get_fitting(self.start, stop)
-        self.lines[density] = Line2D(keys, means, marker=marker, color=color, linestyle=linestyle)
+        self.lines[density] = Line2D(keys, means, marker=marker, color=color, linestyle=linestyle, **kwargs)
         #plt.plot(self.lines[density], label=r"d={0}".format(density))
         #plt.plot(keys, map(lambda x : x*s+i, keys), color=color, linestyle=PLT_LINESTYLE.next())
 

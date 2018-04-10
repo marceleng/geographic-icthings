@@ -1,33 +1,18 @@
 #!/usr/bin/local/python
 
 from math import log,ceil,floor
-import matplotlib
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.colors as colors
 import numpy as np
 from itertools import product
 
 from constants import icn_int_packet_size, icn_geo_int_packet_size, HDR_802154_LEN, icn_cnt_packet_size
 
-from model_result import nb_tries_per_message, pc
-
-#Forces matplotlib to use type 1 fonts
-matplotlib.rcParams['ps.useafm'] = True
-matplotlib.rcParams['pdf.use14corefonts'] = True
-matplotlib.rcParams['text.usetex'] = True
+from model_result_notebook import nb_tries_per_message, pc
 
 URBAN_SENSORS = (1,1)
 BDG_AUTO = (20,2000)
 
 AGGREGATION_DEGREE = 1
-NB_POINTS=1000
-x=np.array(range(URBAN_SENSORS[0],BDG_AUTO[0]))
-y=np.array(range(URBAN_SENSORS[1],BDG_AUTO[1],(BDG_AUTO[1]-URBAN_SENSORS[1])/NB_POINTS))
-print y
-X,Y=np.meshgrid(x,y)
-
-matplotlib.rcParams.update({ 'font.size' : 14 })
 
 def nb_names(nb_neigh):
     #return 14250-850*nb_neigh
@@ -100,60 +85,18 @@ def fib_cost (nb_names, name_lgth):
 
 def geo_cost (nb_names, nb_neigh, name_lgth, loc_size):
     return beacon_cost(nb_neigh, loc_size)+interest_cost_geo(nb_neigh, nb_names, name_lgth, loc_size)
-
-'''
-###
-### Walk on a curve
-###
-pos = range(int(URBAN_SENSORS[0]),int(BDG_AUTO[0]))
-fib_values = map(lambda x : fib_cost(nb_names(x)), pos)
-geo_values = map(lambda x : geo_cost(nb_names(x),x),pos)
-
-plt.plot(pos, fib_values, color="blue", label="Vanilla FIB")
-plt.plot(pos, geo_values, linestyle="dashed", color="red", label="Geographic forwarding")
-'''
-
-###
-### Heatmap + contours
-###
-'''
-POINTS=np.array(map(lambda a : map(lambda b : geo_cost(b,a, name_length(b))/fib_cost(b, name_length(b)), map(lambda c : floor(c/AGGREGATION_DEGREE),y)), x))
-plt.pcolormesh(X,Y,POINTS.T,
-       cmap='PuBu_r',norm=colors.LogNorm())
-cb = plt.colorbar()
-cb_ticks=[0.2,0.4,0.6,0.8,1,2,3,5,7,10]
-#cb.set_ticks(cb_ticks)
-#cb.set_ticklabels(cb_ticks)
-cs = plt.contour(X,Y,POINTS.T,[0.25,0.5,0.6,0.7,0.8,0.9,1,1.1,1.2,1.3,1.4,1.5,2,4],linestyles='solid',colors='black',linewidths=2)
-plt.clabel(cs, inline=1, fontsize=14)
-plt.xlabel("Number of neighbours", fontsize=14)
-plt.ylabel("Number of FIB entries", fontsize=14)
-'''
-
 ###
 ### Stacked bar plots
 ###
+'''
 BASELINE={"name length" : [5,20], "nb neigh" : [5, 20], "nb names" : [5], "loc size" : [1,8]}
 #SCENARIOS=list(product(*map(lambda x : x[1], BASELINE.iteritems())))
-SCENARIOS=[[11,5,150,8],[10,4,97,4],[13,15,250,8],[8,8,30,1]]
+SCENARIOS=[[10,4,97,4],[11,5,150,8],[8,8,30,1],[13,15,250,8]]
 print SCENARIOS
 ind=np.arange(0.15,len(SCENARIOS)+.15)
 width=0.35
 
 fig, ax = plt.subplots()
-
-## WITH LOG
-'''
-comm_cost = map(lambda x : log(communication_cost(hdr_length(x[0]))), SCENARIOS)
-crypto_cost = map(lambda x : log(crypto_cost_uj(hdr_length(x[0]))), SCENARIOS)
-fwd_cost = map(lambda x : log(COST_FIB_UJ*fib_size(x[2])+INTERCEPT_FIB_UJ), SCENARIOS)
-
-comm_cost_geo = map(lambda x : log(communication_cost(geo_hdr_length(x[0]))), SCENARIOS)
-crypto_cost_geo = map(lambda x : log(crypto_cost_uj(geo_hdr_length(x[0]))), SCENARIOS)
-fwd_cost_geo = map(lambda x : log(COST_NEIGH_UJ*x[1]+INTERCEPT_NEIGH_UJ), SCENARIOS)
-
-plt.ylabel("Energy cost (dB)")
-'''
 
 ## WITHOUT LOG
 comm_cost = map(lambda x : nb_tries_per_message(pc[x[1]])*communication_cost(icn_int_packet_size(x[0]) + icn_cnt_packet_size(x[0], PAYLOAD_SIZE)), SCENARIOS)
@@ -196,3 +139,4 @@ pp.savefig()
 pp. close()
 
 plt.show()
+'''
