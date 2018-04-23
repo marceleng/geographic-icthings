@@ -5,6 +5,7 @@ This repository contains source code and scripts for the paper entitled *On the 
  * `simulators`: code used for simulating the flooding on a wireless sensor network
  * `sim_results`: results for the simulation campaign that we performed as CSV files
  * `models`: python code to compute the model results for the simulation results in `sim_results`
+ * `geo_fwd_module`: C code (compatible with RIOT-OS) for compiling the next-hop with GPSR
  * [SOON] `paper`: LaTeX source code for the paper
  
 ## Exploring the results:
